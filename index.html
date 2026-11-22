@@ -3,79 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rigwise – Gaming PC builder</title>
+<title>Rigwise – Which parts for your games</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
   <a class="logo" href="#home">Rigwise</a>
-  <nav aria-label="Main"><a href="#home">Home</a><a href="#builder">Builder</a><a href="#parts">Parts</a><a href="#compare">Compare</a></nav>
+  <nav aria-label="Main"><a href="#home">Home</a><a href="#games">Games</a><a href="#shops">Shops</a></nav>
 </header>
 <main>
 
 <section class="page" id="p-home">
-  <h1>Tell us your budget. We spend it for you.</h1>
-  <p class="lead">Drag the slider. Rigwise picks parts that work together and explains each choice in plain language.</p>
-  <div class="panel hero">
-    <div class="row" style="justify-content:space-between;align-items:flex-end">
-      <div class="money" id="h-money"></div>
-      <div class="tag" id="h-class"></div>
-    </div>
-    <label for="h-range" class="sr" style="position:absolute;left:-9999px">Budget in euros</label>
-    <input type="range" id="h-range" min="450" max="2200" step="10" aria-label="Budget in euros">
-    <div id="h-bar"></div>
-    <div class="row" style="margin-top:16px"><a class="btn" href="#builder">See the full build</a><span id="h-sum" style="color:var(--mute)"></span></div>
-  </div>
-  <h2>Popular builds</h2>
-  <div class="row" id="pop"></div>
-  <h2>How it works</h2>
+  <h1>Pick your games. We pick the parts.</h1>
+  <p class="lead">Choose the games you play and how fast you want them to run. Rigwise shows the processor, graphics card and other parts that get you there, then links you to Bulgarian shops to compare.</p>
+  <div class="row"><a class="btn" href="#games">Choose my games</a></div>
+  <h2>Three levels</h2>
   <div class="grid3">
-    <div class="panel"><h3>Rules decide compatibility</h3><p>Socket, memory type, power, case fit. Checked by code against a parts list, never guessed.</p></div>
-    <div class="panel"><h3>Budget goes where it counts</h3><p>Rigwise tests every compatible pairing of processor and graphics card and keeps the fastest one you can afford.</p></div>
-    <div class="panel"><h3>Every part explained</h3><p>No jargon. Each pick comes with a short reason tied to your budget and screen.</p></div>
+    <div class="panel"><h3>Low: 70–80 fps</h3><p>Smooth and playable. The smallest parts that reach it.</p></div>
+    <div class="panel"><h3>Medium: 100–160 fps</h3><p>Fast and fluid on a high-refresh screen.</p></div>
+    <div class="panel"><h3>High: 400+ fps</h3><p>For competitive games. Heavy games can’t reach this, so we show the most the parts can do.</p></div>
   </div>
 </section>
 
-<section class="page" id="p-builder">
-  <h1>Build my PC</h1>
-  <div class="row" style="margin-bottom:18px">
-    <button class="alt" id="m-budget" aria-pressed="true">Start from a budget</button>
-    <button class="alt" id="m-game" aria-pressed="false">Start from a game</button>
-  </div>
-  <div class="panel" id="mode-budget">
-    <div class="money" id="b-money"></div>
-    <input type="range" id="b-range" min="450" max="2200" step="10" aria-label="Budget in euros">
-    <div class="row" style="margin-top:6px"><span style="font-weight:600">Screen:</span><span id="res"></span></div>
-  </div>
-  <div class="panel" id="mode-game" hidden>
-    <div class="grid3" style="align-items:end">
-      <div><label for="g-sel">Game</label><select id="g-sel"></select></div>
-      <div><label for="g-q">Target</label><select id="g-q"><option value="1">60 fps, 1080p high settings</option><option value="1.3">120 fps, 1080p high settings</option></select></div>
-    </div>
-    <p id="g-out" style="margin:16px 0 0;font-weight:600"></p>
-  </div>
-  <div id="b-result" style="margin-top:20px"></div>
+<section class="page" id="p-games">
+  <h1>Which parts for my games?</h1>
+  <p class="lead">Tap the games you play, then choose a level.</p>
+  <div class="row" id="chips" role="group" aria-label="Games"></div>
+  <div class="row" id="tiers" style="margin:18px 0" role="group" aria-label="Level"></div>
+  <div id="g-out"></div>
 </section>
 
-<section class="page" id="p-parts">
-  <h1>Compare every part</h1>
-  <p class="lead">Pick a part type to see its price in six Bulgarian shops. Click a price to search for the part in that shop.</p>
+<section class="page" id="p-shops">
+  <h1>Compare parts in shops</h1>
+  <p class="lead">Pick a part type, then open any part in six Bulgarian shops to compare there.</p>
   <div class="row" id="pt-cats"></div>
   <div class="panel scroll" id="pt-out" style="margin-top:20px"></div>
 </section>
 
-<section class="page" id="p-compare">
-  <h1>Compare builds</h1>
-  <p class="lead">Enter up to three budgets and see where the extra money goes.</p>
-  <div class="grid3" id="c-in"></div>
-  <div class="panel scroll" id="c-out" style="margin-top:20px"></div>
-</section>
-
-<p class="note" style="max-width:1040px;margin:0 auto;padding:0 20px">Shop prices are estimates for Bulgarian shops, not live prices, and the links open a search for the part in each shop. Performance scores are relative estimates, not benchmarks. Hardware Explorer is planned for a later version.</p>
+<p class="note" style="max-width:1040px;margin:0 auto;padding:0 20px">Frame rates are estimates at 1080p, not benchmarks. Shop links open a search for the part in that shop, so you see its current price there.</p>
 </main>
 <footer>Rigwise prototype</footer>
-
 <script src="app.js"></script>
 </body>
 </html>
