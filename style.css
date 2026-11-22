@@ -89,3 +89,6 @@ h1{text-shadow:0 0 42px #e5262e55}
 .gt td:first-child{font-weight:600}
 .gm{margin-bottom:14px}.gm summary{cursor:pointer;font-weight:800;font-size:20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}.gm table{min-width:560px}.gt td{vertical-align:top}
 .gt tr.cur td{background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.cfgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
+#cf-sum{position:sticky;top:76px}.slot{margin-bottom:12px}.slot label{margin-bottom:8px}
+@media(max-width:860px){.cfgrid{grid-template-columns:1fr}#cf-sum{position:static}}
