@@ -76,3 +76,7 @@ button.alt[aria-pressed=true]{background:var(--acc);border-color:var(--acc);colo
 .panel{box-shadow:0 18px 40px -26px #000}.tot{border:1px solid var(--line)}
 .lnk{color:var(--acc);font-weight:600;text-decoration:none}.lnk:hover{text-decoration:underline}
 h1{text-shadow:0 0 42px #e5262e55}
+.chip{padding:8px 14px;font-size:15px}
+.shoplinks{font-size:14px;color:var(--mute);margin-top:4px}.shoplinks a{margin-right:2px}
+.fps-ok{color:var(--ok);font-weight:600}.fps-max{color:var(--warn);font-weight:600}
+.gt td:first-child{font-weight:600}
