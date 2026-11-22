@@ -65,7 +65,7 @@ var SUF={board:" motherboard",ram:" RAM",ssd:" SSD",psu:" power supply",cs:" PC 
 var GAMES=[["League of Legends",700,"e"],["Dota 2",450,"e"],["Valorant",800,"e"],["Minecraft",600,"m"],["Rocket League",800,"e"],["Rainbow Six Siege",600,"e"],["Grand Theft Auto V",230,"m"],["Overwatch 2",500,"e"],["Counter-Strike 2",450,"e"],["The Witcher 3",190,"a"],["Elden Ring",150,"m",60],["Apex Legends",320,"e"],["Fortnite",300,"m"],["Marvel Rivals",220,"m"],["Baldur’s Gate 3",170,"m"],["Helldivers 2",150,"m"],["Call of Duty: Warzone",230,"m"],["Forza Horizon 5",230,"a"],["Red Dead Redemption 2",160,"a"],["Hogwarts Legacy",140,"a"],["Starfield",140,"m"],["Cyberpunk 2077",180,"a"],["Alan Wake 2",120,"a"],["Black Myth: Wukong",110,"a"]];
 var WT={e:[.35,.65],m:[.6,.4],a:[.8,.2]},FOCUS={e:"processor",m:"processor and graphics card about equally",a:"graphics card"};
 var LEVELS=[["Medium",400],["Good",800],["Expensive",1e9]];
-var S={sel:[2,8,21],tier:1,pk:"gpu"};
+var S={sel:[2,8,21],tier:1,pk:"gpu",cg:4};
 var $=function(s){return document.querySelector(s)};
 function lk(x,i,k){return"https://www.google.com/search?q="+encodeURIComponent("site:"+SHOPS[i][1]+" "+x.n+(SUF[k]||""))}
 function shopLinks(x,k){return'<div class="shoplinks">'+SHOPS.map(function(s,i){return'<a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,k)+'">'+s[0]+'</a>'}).join(" · ")+'</div>'}
@@ -129,13 +129,74 @@ function shops(){
     h+='<tr><th style="color:var(--ink)">'+item(x,S.pk,0)+'</th>'+SHOPS.map(function(s,i){return'<td><a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,S.pk)+'">Open</a></td>'}).join("")+'</tr>'});
   $("#pt-out").innerHTML=h+'</tbody></table>';
 }
+/* Configurator: pick each part yourself, with compatibility checks (like a step-by-step PC builder) */
+var STEPS=[["1. Computer case",[["Case","cs"]]],["2. Main components",[["Processor","cpu"],["Motherboard","board"],["Memory","ram"],["Graphics card","gpu"],["Storage","ssd"],["Power supply","psu"]]]];
+var CF={cs:-1,cpu:-1,board:-1,ram:-1,gpu:-1,ssd:-1,psu:-1};
+function cfp(k){return CF[k]>-1?P[k][CF[k]]:null}
+function conflict(k,x){
+  var c=cfp("cpu"),b=cfp("board"),r=cfp("ram"),g=cfp("gpu"),cs=cfp("cs");
+  if(k==="cpu"&&b&&x.sock!==b.sock)return"your board uses socket "+b.sock+", this needs "+x.sock;
+  if(k==="board"){
+    if(c&&c.sock!==x.sock)return"socket "+x.sock+", but your processor uses "+c.sock;
+    if(r&&r.mem!==x.mem)return"uses "+x.mem+", but your memory is "+r.mem;
+    if(cs&&cs.ff.indexOf(x.ff)<0)return x.ff+" board does not fit your case";
+  }
+  if(k==="ram"&&b&&x.mem!==b.mem)return"your board uses "+b.mem+", this is "+x.mem;
+  if(k==="gpu"&&cs&&cs.gpu<x.len+20)return"too long for your case";
+  if(k==="cs"){
+    if(b&&x.ff.indexOf(b.ff)<0)return"does not fit your "+b.ff+" board";
+    if(g&&x.gpu<g.len+20)return"too short for your graphics card";
+  }
+  if(k==="psu"&&c&&g&&x.w<(c.tdp+g.tdp+80)*1.3)return"too weak for your processor and graphics card";
+  return"";
+}
+function config(){
+  var h="";
+  STEPS.forEach(function(st){
+    h+='<h2 style="font-size:22px">'+st[0]+'</h2>';
+    st[1].forEach(function(sl){
+      var k=sl[1],cur=cfp(k),warn=cur?conflict(k,cur):"";
+      h+='<div class="panel slot"><label for="cf-'+k+'">'+sl[0]+'</label><select id="cf-'+k+'" data-k="'+k+'"><option value="-1">Choose '+sl[0].toLowerCase()+'</option>';
+      P[k].forEach(function(x,i){var r=conflict(k,x);h+='<option value="'+i+'"'+(CF[k]===i?' selected':'')+'>'+x.n+' ('+SPECS[x.n][0][1]+')'+(r?' – not compatible: '+r:'')+'</option>'});
+      h+='</select>'+(warn?'<p class="bad" style="margin:8px 0 0">⚠ '+warn+'</p>':'')+(cur?'<div style="margin-top:12px">'+item(cur,k,1)+'</div>':'')+'</div>';
+    });
+  });
+  $("#cf-slots").innerHTML=h;
+  var c=cfp("cpu"),b=cfp("board"),r=cfp("ram"),g=cfp("gpu"),cs=cfp("cs"),p=cfp("psu");
+  function ln(ok,t,pending){return'<li class="'+(ok===null?'':ok?'ok':'bad')+'">'+(ok===null?'– ':ok?'✓ ':'✗ ')+t+(ok===null?' ('+pending+')':'')+'</li>'}
+  var s='<div class="panel"><h2 style="margin:0 0 10px;font-size:22px">Your configuration</h2><ul class="checks">';
+  s+=ln(c&&b?c.sock===b.sock:null,"Processor fits the motherboard socket","choose both");
+  s+=ln(r&&b?r.mem===b.mem:null,"Memory type matches the motherboard","choose both");
+  s+=ln(b&&cs?cs.ff.indexOf(b.ff)>-1:null,"Motherboard fits the case","choose both");
+  s+=ln(g&&cs?cs.gpu>=g.len+20:null,"Graphics card fits the case","choose both");
+  s+=ln(c&&g&&p?p.w>=(c.tdp+g.tdp+80)*1.3:null,"Power supply is strong enough","choose processor, graphics card and power supply");
+  s+='</ul>';
+  if(c&&g){var d=c.tdp+g.tdp+80;s+='<p style="margin:14px 0 0">Your parts draw about <b>'+d+' W</b>. Choose a power supply of at least <b>'+(Math.ceil(d*1.3/50)*50)+' W</b>.</p>'}
+  s+='<h3 style="margin:18px 0 6px">How fast will it run?</h3><select id="cf-game" aria-label="Game">'+GAMES.map(function(x,i){return'<option value="'+i+'"'+(S.cg===i?' selected':'')+'>'+x[0]+'</option>'}).join("")+'</select>';
+  var gm=GAMES[S.cg];
+  s+='<p style="margin:10px 0 0">'+(c&&g?'About <b class="fps-ok">'+fps(gm,perf(g,c,WT[gm[2]]))+' fps</b> in '+gm[0]+' at 1080p high settings.':'Choose a processor and a graphics card to see the speed.')+'</p>';
+  s+='<h3 style="margin:18px 0 6px">Fill it for me</h3><div class="row">'+LEVELS.map(function(l,i){return'<button class="alt chip" data-fill="'+i+'">'+l[0]+' parts for '+gm[0]+'</button>'}).join("")+'</div>';
+  s+='<div class="row" style="margin-top:18px"><button data-act="copy">Copy link to this configuration</button><button class="alt" data-act="reset">Start over</button></div><p id="cf-msg" style="color:var(--mute);margin:8px 0 0"></p></div>';
+  $("#cf-sum").innerHTML=s;
+}
+function cfLink(){var q=new URLSearchParams();Object.keys(CF).forEach(function(k){if(CF[k]>-1)q.set(k,CF[k])});return location.origin+location.pathname+(q.toString()?"?"+q:"")+"#config"}
+function cfLoad(){try{var q=new URLSearchParams(location.search);Object.keys(CF).forEach(function(k){var v=parseInt(q.get(k),10);if(v>=0&&v<P[k].length)CF[k]=v})}catch(e){}}
 function route(){
-  var r=location.hash.slice(1);if(["home","games","shops"].indexOf(r)<0)r="home";
+  var r=location.hash.slice(1);if(["home","games","config","shops"].indexOf(r)<0)r="home";
   document.querySelectorAll(".page").forEach(function(p){p.classList.toggle("on",p.id==="p-"+r)});
   document.querySelectorAll("nav a").forEach(function(a){if(a.getAttribute("href")==="#"+r)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
-  if(r==="games")games();if(r==="shops")shops();
+  if(r==="games")games();if(r==="config")config();if(r==="shops")shops();
 }
 $("#chips").onclick=function(e){var b=e.target.closest("[data-g]");if(!b)return;var i=+b.dataset.g,k=S.sel.indexOf(i);if(k>-1)S.sel.splice(k,1);else S.sel.push(i);games()};
 $("#tiers").onclick=function(e){var b=e.target.closest("[data-t]");if(b){S.tier=+b.dataset.t;games()}};
 $("#pt-cats").onclick=function(e){var k=e.target.dataset.k;if(k){S.pk=k;shops()}};
+$("#cf-slots").onchange=function(e){var k=e.target.dataset.k;if(k){CF[k]=+e.target.value;config()}};
+$("#cf-sum").onchange=function(e){if(e.target.id==="cf-game"){S.cg=+e.target.value;config()}};
+$("#cf-sum").onclick=function(e){
+  var f=e.target.closest("[data-fill]"),a=e.target.closest("[data-act]");
+  if(f){var i=+f.dataset.fill,g=GAMES[S.cg],r=bestUnder(LEVELS[i][1],WT[g[2]],g[3]?g[3]*100/g[1]:0),b=fullBuild(r.c,r.g,i?130:75);Object.keys(CF).forEach(function(k){CF[k]=P[k].indexOf(b[k])});config()}
+  if(a&&a.dataset.act==="reset"){Object.keys(CF).forEach(function(k){CF[k]=-1});config()}
+  if(a&&a.dataset.act==="copy"){var u=cfLink(),m=function(t){var el=$("#cf-msg");if(el)el.textContent=t};try{navigator.clipboard.writeText(u).then(function(){m("Link copied.")},function(){m(u)})}catch(x){m(u)}}
+};
+cfLoad();
 window.addEventListener("hashchange",route);route();
