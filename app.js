@@ -1,4 +1,4 @@
-/* Parts list. The "p" number is only used internally to prefer smaller parts; it is never shown. */
+/* Parts list. "p" is a rough price estimate in euros, shown as ~€. */
 var P={
 cpu:[{n:"Ryzen 5 5600",p:105,sock:"AM4",tdp:65,s:62},{n:"Core i5-12400F",p:120,sock:"LGA1700",tdp:65,s:60},{n:"Ryzen 5 7600",p:195,sock:"AM5",tdp:65,s:76},{n:"Core i5-14600K",p:280,sock:"LGA1700",tdp:125,s:86},{n:"Ryzen 7 7800X3D",p:360,sock:"AM5",tdp:120,s:100}],
 gpu:[{n:"Radeon RX 6600",p:200,tdp:132,len:240,s:38},{n:"GeForce RTX 4060",p:290,tdp:115,len:240,s:48},{n:"Radeon RX 7700 XT",p:430,tdp:245,len:280,s:68},{n:"Radeon RX 7900 GRE",p:550,tdp:260,len:280,s:78},{n:"GeForce RTX 4070 Super",p:600,tdp:220,len:245,s:82},{n:"GeForce RTX 4070 Ti Super",p:820,tdp:285,len:305,s:92},{n:"GeForce RTX 4080 Super",p:1000,tdp:320,len:310,s:100}],
@@ -10,25 +10,27 @@ cs:[{n:"Compact mATX case",p:55,ff:["mATX"],gpu:300},{n:"Mid-tower ATX case",p:7
 var CATS=[["Graphics card","gpu"],["Processor","cpu"],["Motherboard","board"],["Memory","ram"],["Storage","ssd"],["Power supply","psu"],["Case","cs"]];
 var SHOPS=[["Ardes","ardes.bg"],["Desktop.bg","desktop.bg"],["Plasico","plasico.bg"],["Ozone","ozone.bg"],["Jar Computers","jarcomputers.com"],["eMAG","emag.bg"]];
 var SUF={board:" motherboard",ram:" RAM",ssd:" SSD",psu:" power supply",cs:" PC case"};
-/* [name, how demanding (higher = harder to run)] */
-var GAMES=[["League of Legends",12],["Dota 2",18],["Valorant",15],["Minecraft",20],["Rocket League",22],["Rainbow Six Siege",28],["Grand Theft Auto V",30],["Overwatch 2",32],["Counter-Strike 2",35],["The Witcher 3",38],["Elden Ring",40],["Apex Legends",42],["Fortnite",45],["Marvel Rivals",48],["Baldur’s Gate 3",50],["Helldivers 2",52],["Call of Duty: Warzone",55],["Forza Horizon 5",55],["Red Dead Redemption 2",58],["Hogwarts Legacy",65],["Starfield",68],["Cyberpunk 2077",70],["Alan Wake 2",80],["Black Myth: Wukong",82]];
+/* [name, how demanding (higher = harder to run), type] */
+var GAMES=[["League of Legends",12,"e"],["Dota 2",18,"e"],["Valorant",15,"e"],["Minecraft",20,"m"],["Rocket League",22,"e"],["Rainbow Six Siege",28,"e"],["Grand Theft Auto V",30,"m"],["Overwatch 2",32,"e"],["Counter-Strike 2",35,"e"],["The Witcher 3",38,"a"],["Elden Ring",40,"m"],["Apex Legends",42,"e"],["Fortnite",45,"m"],["Marvel Rivals",48,"m"],["Baldur’s Gate 3",50,"m"],["Helldivers 2",52,"m"],["Call of Duty: Warzone",55,"m"],["Forza Horizon 5",55,"a"],["Red Dead Redemption 2",58,"a"],["Hogwarts Legacy",65,"a"],["Starfield",68,"m"],["Cyberpunk 2077",70,"a"],["Alan Wake 2",80,"a"],["Black Myth: Wukong",82,"a"]];
+var WT={e:[.35,.65],m:[.6,.4],a:[.8,.2]},FOCUS={e:"processor",m:"processor and graphics card about equally",a:"graphics card"};
 var TIERS=[["Low","70–80 fps",75],["Medium","100–160 fps",130],["High","400+ fps",400]];
 var S={sel:[2,8,21],tier:0,pk:"gpu"};
 var $=function(s){return document.querySelector(s)};
 function lk(x,i,k){return"https://www.google.com/search?q="+encodeURIComponent("site:"+SHOPS[i][1]+" "+x.n+(SUF[k]||""))}
 function shopLinks(x,k){return'<div class="shoplinks">'+SHOPS.map(function(s,i){return'<a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,k)+'">'+s[0]+'</a>'}).join(" · ")+'</div>'}
-function perf(g,c){return .6*g.s+.4*c.s}
+function pr(x){return"~€"+(Math.round(x.p/5)*5).toLocaleString("en")}
+function perf(g,c,w){return w[0]*g.s+w[1]*c.s}
 function fps(req,p){return Math.round(60*p/req)}
 function minBy(a,f){return a.filter(f).sort(function(x,y){return x.p-y.p})[0]}
-/* smallest CPU + GPU pair that reaches the needed score; otherwise the strongest pair */
-function pick(need){
+/* smallest CPU + GPU pair that reaches the needed score for this game; otherwise the strongest pair */
+function pick(need,w){
   var ok=null,top=null;
   P.cpu.forEach(function(c){P.gpu.forEach(function(g){
-    var p=perf(g,c),r={c:c,g:g,p:p,w:c.p+g.p};
+    var p=perf(g,c,w),r={c:c,g:g,p:p,w:c.p+g.p};
     if(!top||p>top.p)top=r;
     if(p>=need&&(!ok||r.w<ok.w))ok=r;
   })});
-  return ok?{c:ok.c,g:ok.g,p:ok.p,ok:true}:{c:top.c,g:top.g,p:top.p,ok:false};
+  var o=ok||top;return{c:o.c,g:o.g,p:o.p,ok:!!ok};
 }
 function fullBuild(c,g,t){
   var gb=t>=130?32:16,boards=P.board.filter(function(b){return b.sock===c.sock}).sort(function(a,b){return a.p-b.p});
@@ -40,36 +42,28 @@ function fullBuild(c,g,t){
     return{gpu:g,cpu:c,board:bd,ram:ram,ssd:gb>16?P.ssd[1]:P.ssd[0],psu:psu,cs:cs};
   }
 }
-function why(b,hard,t){
-  return{gpu:"Does most of the work for frame rate. This is the smallest card that gets your toughest game, "+hard+", to the target.",
-  cpu:"Keeps up with the graphics card so neither one holds the other back.",
-  board:"Fits the "+b.cpu.sock+" processor and "+b.ram.mem+" memory.",
-  ram:b.ram.gb>=32?"32 GB for smooth play at high frame rates.":"16 GB is enough for nearly every game.",
-  ssd:"Holds your games and loads them quickly.",
-  psu:"Covers your parts’ power draw with room to spare.",
-  cs:"Fits the board and the "+b.gpu.len+" mm graphics card."};
-}
+function total(b){return CATS.reduce(function(a,c){return a+b[c[1]].p},0)}
 function games(){
   $("#chips").innerHTML=GAMES.map(function(g,i){return'<button class="alt chip" data-g="'+i+'" aria-pressed="'+(S.sel.indexOf(i)>-1)+'">'+g[0]+'</button>'}).join("");
   $("#tiers").innerHTML=TIERS.map(function(t,i){return'<button class="alt" data-t="'+i+'" aria-pressed="'+(S.tier===i)+'">'+t[0]+' · '+t[1]+'</button>'}).join("");
   if(!S.sel.length){$("#g-out").innerHTML='<div class="panel">Pick at least one game above.</div>';return}
-  var t=TIERS[S.tier][2],sel=S.sel.map(function(i){return GAMES[i]}),hard=sel.reduce(function(a,g){return g[1]>a[1]?g:a});
-  var all=pick(hard[1]*t/60),b=fullBuild(all.c,all.g,t),w=why(b,hard[0],t);
-  var h='<div class="panel"><h2 style="margin:0 0 4px;font-size:22px">Parts for all '+sel.length+' game'+(sel.length>1?'s':'')+'</h2>';
-  h+='<p style="margin:0 0 8px;color:var(--mute)">Target: '+TIERS[S.tier][1]+'. '+(all.ok?'These parts reach it in every game you chose.':'Your toughest game, '+hard[0]+', can’t reach this with the parts we list. These are the strongest ones.')+'</p>';
-  CATS.forEach(function(c,i){var x=b[c[1]];
-    h+='<div class="part"><div class="k"><b style="background:var(--c'+i+')"></b>'+c[0]+'</div><div class="n">'+x.n+'</div><div></div><div class="w">'+w[c[1]]+shopLinks(x,c[1])+'</div></div>'});
-  h+='</div><h2 style="font-size:22px">Game by game</h2><div class="panel scroll"><table class="gt"><thead><tr><th>Game</th><th>Smallest parts that reach '+TIERS[S.tier][1]+'</th><th>Frame rate on the parts above</th></tr></thead><tbody>';
-  sel.forEach(function(g){
-    var m=pick(g[1]*t/60),f=fps(g[1],all.p),mf=fps(g[1],m.p);
-    h+='<tr><td>'+g[0]+'</td><td>'+m.g.n+' + '+m.c.n+(m.ok?'':'<br><span class="fps-max">Most these parts can do: about '+mf+' fps</span>')+'</td><td><span class="'+(f>=t?'fps-ok':'fps-max')+'">about '+f+' fps</span></td></tr>'});
-  $("#g-out").innerHTML=h+'</tbody></table></div>';
+  var t=TIERS[S.tier][2],h="";
+  S.sel.slice().sort(function(x,y){return x-y}).forEach(function(gi,k){
+    var g=GAMES[gi],w=WT[g[2]],a=pick(g[1]*t/60,w),m=pick(1e9,w),ba=fullBuild(a.c,a.g,t),bm=fullBuild(m.c,m.g,Math.max(t,130)),fa=fps(g[1],a.p),fm=fps(g[1],m.p),same=a.g===m.g&&a.c===m.c;
+    h+='<details class="panel gm"'+(k===0?' open':'')+'><summary>'+g[0]+' <span class="tag">target '+TIERS[S.tier][1]+'</span> <span class="tag">max about '+fm+' fps</span></summary>';
+    h+='<p style="color:var(--mute);margin:10px 0">'+g[0]+' leans on the '+FOCUS[g[2]]+', so those parts get priority. '+(a.ok?'':'The target is out of reach for the parts we list, so the left column already shows the best we can do. ')+(same&&a.ok?'The smallest parts that reach your target are also the strongest, so both columns match.':'')+'</p>';
+    h+='<div class="scroll"><table class="gt"><thead><tr><th>Part</th><th>To reach the target<br><span class="'+(fa>=t?'fps-ok':'fps-max')+'">about '+fa+' fps</span></th><th>For the most fps<br><span class="fps-ok">about '+fm+' fps</span></th></tr></thead><tbody>';
+    CATS.forEach(function(c){var x=ba[c[1]],y=bm[c[1]];
+      h+='<tr><th>'+c[0]+'</th><td>'+x.n+' <span style="color:var(--mute)">'+pr(x)+'</span>'+shopLinks(x,c[1])+'</td><td>'+y.n+' <span style="color:var(--mute)">'+pr(y)+'</span></td></tr>'});
+    h+='<tr><th>Total</th><td><b>~€'+(Math.round(total(ba)/10)*10).toLocaleString("en")+'</b></td><td><b>~€'+(Math.round(total(bm)/10)*10).toLocaleString("en")+'</b></td></tr></tbody></table></div></details>';
+  });
+  $("#g-out").innerHTML=h;
 }
 function shops(){
   $("#pt-cats").innerHTML=CATS.map(function(c){return'<button class="alt" data-k="'+c[1]+'" aria-pressed="'+(S.pk===c[1])+'">'+c[0]+'</button>'}).join("");
-  var h='<table><thead><tr><th>Part</th>'+SHOPS.map(function(s){return'<th>'+s[0]+'</th>'}).join("")+'</tr></thead><tbody>';
+  var h='<table><thead><tr><th>Part</th><th>Price</th>'+SHOPS.map(function(s){return'<th>'+s[0]+'</th>'}).join("")+'</tr></thead><tbody>';
   P[S.pk].forEach(function(x){
-    h+='<tr><th style="color:var(--ink)">'+x.n+'</th>'+SHOPS.map(function(s,i){return'<td><a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,S.pk)+'">Open</a></td>'}).join("")+'</tr>'});
+    h+='<tr><th style="color:var(--ink)">'+x.n+'</th><td>'+pr(x)+'</td>'+SHOPS.map(function(s,i){return'<td><a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,S.pk)+'">Open</a></td>'}).join("")+'</tr>'});
   $("#pt-out").innerHTML=h+'</tbody></table>';
 }
 function route(){
