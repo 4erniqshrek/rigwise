@@ -88,3 +88,4 @@ h1{text-shadow:0 0 42px #e5262e55}
 .fps-ok{color:var(--ok);font-weight:600}.fps-max{color:var(--warn);font-weight:600}
 .gt td:first-child{font-weight:600}
 .gm{margin-bottom:14px}.gm summary{cursor:pointer;font-weight:800;font-size:20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}.gm table{min-width:560px}.gt td{vertical-align:top}
+.gt tr.cur td{background:color-mix(in srgb,var(--acc) 12%,transparent)}
