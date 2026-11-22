@@ -92,3 +92,4 @@ h1{text-shadow:0 0 42px #e5262e55}
 .cfgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:start}
 #cf-sum{position:sticky;top:76px}.slot{margin-bottom:12px}.slot label{margin-bottom:8px}
 @media(max-width:860px){.cfgrid{grid-template-columns:1fr}#cf-sum{position:static}}
+.gd ul,.gd ol{margin:12px 0 0;padding-left:22px}.gd li{margin:10px 0;max-width:46em}.tipl{margin:0;padding-left:20px;columns:2 280px;column-gap:32px}.tipl li{margin:6px 0;break-inside:avoid}
