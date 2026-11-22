@@ -74,4 +74,5 @@ nav a[aria-current=page]{background:var(--acc);color:#fff}
 button.alt[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
 .fps i{background:var(--ok)}.tier[aria-pressed=true]{box-shadow:0 0 0 1px var(--acc),0 12px 40px -14px var(--acc)}
 .panel{box-shadow:0 18px 40px -26px #000}.tot{border:1px solid var(--line)}
+.lnk{color:var(--acc);font-weight:600;text-decoration:none}.lnk:hover{text-decoration:underline}
 h1{text-shadow:0 0 42px #e5262e55}
