@@ -66,15 +66,18 @@ function card(b,res,budget){
   if(!b)return'<div class="panel"><p style="margin:0">That budget is too low for a build that passes every check. Try at least '+eur(450)+'.</p></div>';
   var w=why(b,res,budget),h='<div class="panel">'+bar(b);
   CATS.forEach(function(c,i){var x=b[c[1]];
-    h+='<div class="part"><div class="k"><b style="background:var(--c'+i+')"></b>'+c[0]+'</div><div class="n">'+x.n+'</div><div class="p">'+eur(ST<0?x.p:sp(x,ST))+'</div><div class="w">'+w[c[1]]+'</div></div>'});
+    h+='<div class="part"><div class="k"><b style="background:var(--c'+i+')"></b>'+c[0]+'</div><div class="n">'+x.n+'</div><div class="p">'+eur(ST<0?x.p:sp(x,ST))+'</div><div class="w">'+w[c[1]]+' <a class="lnk" target="_blank" rel="noopener" href="'+lk(x,ST<0?bestStore(x):ST,c[1])+'">Find at '+STORES[ST<0?bestStore(x):ST][0]+'</a></div></div>'});
   h+='<div class="tot"><span style="font-size:22px;font-weight:800">'+eur(ST<0?b.total:stTot(b,ST))+' <span style="font-weight:400;font-size:15px;color:var(--mute)">'+(budget?'of '+eur(budget):(ST<0?'list price':'at '+STORES[ST][0]))+'</span></span><span class="tag">'+cls(b.perf)+'</span></div></div>';
   h+='<h2 style="font-size:20px;margin-top:24px">Compatibility checks</h2><div class="panel">'+checks(b)+'</div>';
   return h;
 }
 /* shops + game view */
-var STORES=[["Amazon.de",1.03],["Caseking",.98],["Alternate",1.01],["eMAG",1.06],["Newegg",1],["Local shop",1.09]];
+var STORES=[["Ardes","ardes.bg",1],["Desktop.bg","desktop.bg",1.02],["Plasico","plasico.bg",.99],["Ozone","ozone.bg",1.04],["Jar Computers","jarcomputers.com",1.01],["eMAG","emag.bg",1.06]];
 function hs(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%97;return h}
-function sp(x,i){return Math.round(x.p*STORES[i][1]*(1+((hs(x.n+i)%9)-4)/100))}
+function sp(x,i){return Math.round(x.p*STORES[i][2]*(1+((hs(x.n+i)%9)-4)/100))}
+var SUF={board:" motherboard",ram:" RAM",ssd:" SSD",psu:" power supply",cs:" PC case"};
+function lk(x,i,k){return"https://www.google.com/search?q="+encodeURIComponent("site:"+STORES[i][1]+" "+x.n+(SUF[k]||""))}
+function bestStore(x){var m=0;STORES.forEach(function(s,i){if(sp(x,i)<sp(x,m))m=i});return m}
 function stTot(b,i){return CATS.reduce(function(a,c){return a+sp(b[c[1]],i)},0)}
 function mixTot(b){return CATS.reduce(function(a,c){var x=b[c[1]];return a+Math.min.apply(null,STORES.map(function(s,i){return sp(x,i)}))},0)}
 function minFor(req){for(var x=450;x<=2500;x+=10){var t=build(x,1080);if(t&&t.perf>=req)return t}return null}
@@ -90,7 +93,7 @@ function gameView(){
   h+='<h2 style="font-size:22px">Compare shops for the “'+T[S.tier][0]+'” build</h2><div class="panel">';
   h+=row('Best mix','cheapest part from each shop',mix,-1,['saves '+eur(mn-mix),1]);
   STORES.forEach(function(s,i){h+=row(s[0],'one order',tots[i],i,tots[i]===mn?['cheapest single shop',1]:['+'+eur(tots[i]-mn),0])});
-  h+='<p class="note" style="margin:12px 0 0">Click a shop to see its prices below. Shop prices are simulated in this prototype; real ones need live retailer feeds.</p></div>';
+  h+='<p class="note" style="margin:12px 0 0">Click a shop to see its prices below. Prices are estimates, not live. Open a shop: '+STORES.map(function(s){return'<a class="lnk" target="_blank" rel="noopener" href="https://'+s[1]+'">'+s[0]+'</a>'}).join(' · ')+'.</p></div>';
   ST=S.store;
   h+='<h2 style="font-size:22px">Your build</h2>'+card(b,1080,0);
   $("#b-result").innerHTML=h;
@@ -112,6 +115,15 @@ function builder(){
   $("#b-result").innerHTML=card(build(budget,res),res,budget);
   $("#res").innerHTML=[1080,1440,2160].map(function(r){return'<button class="alt" data-r="'+r+'" aria-pressed="'+(S.res===r)+'" style="padding:6px 14px;margin-right:6px">'+RESN[r]+'</button>'}).join("");
 }
+var PK="gpu";
+function parts(){
+  $("#pt-cats").innerHTML=CATS.map(function(c){return'<button class="alt" data-k="'+c[1]+'" aria-pressed="'+(PK===c[1])+'">'+c[0]+'</button>'}).join("");
+  var h='<table><thead><tr><th>Part</th>'+STORES.map(function(s){return'<th>'+s[0]+'</th>'}).join("")+'<th>You save</th></tr></thead><tbody>';
+  P[PK].forEach(function(x){
+    var v=STORES.map(function(s,i){return sp(x,i)}),mn=Math.min.apply(null,v),mx=Math.max.apply(null,v);
+    h+='<tr><th style="color:var(--ink)">'+x.n+'</th>'+v.map(function(p,i){return'<td class="'+(p===mn?'best':'')+'"><a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,PK)+'">'+eur(p)+'</a></td>'}).join("")+'<td class="ok">'+eur(mx-mn)+'</td></tr>'});
+  $("#pt-out").innerHTML=h+'</tbody></table>';
+}
 var CB=[700,1000,1500];
 function compare(){
   var bs=CB.map(function(v){return build(v,S.res)});
@@ -124,10 +136,10 @@ function compare(){
   $("#c-out").innerHTML=h;
 }
 function route(){
-  var r=location.hash.slice(1);if(["home","builder","compare"].indexOf(r)<0)r="home";
+  var r=location.hash.slice(1);if(["home","builder","parts","compare"].indexOf(r)<0)r="home";
   document.querySelectorAll(".page").forEach(function(p){p.classList.toggle("on",p.id==="p-"+r)});
   document.querySelectorAll("nav a").forEach(function(a){if(a.getAttribute("href")==="#"+r)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
-  ({home:home,builder:builder,compare:compare})[r]();
+  ({home:home,builder:builder,parts:parts,compare:compare})[r]();
 }
 /* wiring */
 $("#pop").innerHTML=[[700,"Budget 1080p"],[1100,"Sweet spot 1440p"],[1600,"High-end"]].map(function(x){return'<button class="alt" data-b="'+x[0]+'">'+x[1]+" · "+eur(x[0])+"</button>"}).join("");
@@ -143,4 +155,5 @@ $("#g-q").onchange=function(){S.q=this.value;builder()};
 $("#b-result").onclick=function(e){var t=e.target.closest("[data-t]"),s=e.target.closest("[data-s]");if(t){S.tier=+t.dataset.t;builder()}else if(s){S.store=+s.dataset.s;builder()}};
 $("#c-in").innerHTML=CB.map(function(v,i){return'<div><label for="c'+i+'">Build '+(i+1)+' budget (€)</label><input type="number" id="c'+i+'" min="450" max="2500" step="50" value="'+v+'"></div>'}).join("");
 CB.forEach(function(v,i){$("#c"+i).oninput=function(){CB[i]=Math.max(0,+this.value||0);compare()}});
+$("#pt-cats").onclick=function(e){var k=e.target.dataset.k;if(k){PK=k;parts()}};
 window.addEventListener("hashchange",route);route();
