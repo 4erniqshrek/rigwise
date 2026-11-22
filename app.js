@@ -1,4 +1,4 @@
-/* Parts list. "p" is a rough price estimate in euros, shown as ~€. */
+/* Parts list. "p" is only a relative cost rank used to prefer smaller parts. It is never shown. */
 var P={
 cpu:[{n:"Ryzen 5 5600",p:105,sock:"AM4",tdp:65,s:62},{n:"Core i5-12400F",p:120,sock:"LGA1700",tdp:65,s:60},{n:"Ryzen 5 7600",p:195,sock:"AM5",tdp:65,s:76},{n:"Core i5-14600K",p:280,sock:"LGA1700",tdp:125,s:86},{n:"Ryzen 7 7800X3D",p:360,sock:"AM5",tdp:120,s:100}],
 gpu:[{n:"Radeon RX 6600",p:200,tdp:132,len:240,s:38},{n:"GeForce RTX 4060",p:290,tdp:115,len:240,s:48},{n:"Radeon RX 7700 XT",p:430,tdp:245,len:280,s:68},{n:"Radeon RX 7900 GRE",p:550,tdp:260,len:280,s:78},{n:"GeForce RTX 4070 Super",p:600,tdp:220,len:245,s:82},{n:"GeForce RTX 4070 Ti Super",p:820,tdp:285,len:305,s:92},{n:"GeForce RTX 4080 Super",p:1000,tdp:320,len:310,s:100}],
@@ -18,7 +18,6 @@ var S={sel:[2,8,21],tier:0,pk:"gpu"};
 var $=function(s){return document.querySelector(s)};
 function lk(x,i,k){return"https://www.google.com/search?q="+encodeURIComponent("site:"+SHOPS[i][1]+" "+x.n+(SUF[k]||""))}
 function shopLinks(x,k){return'<div class="shoplinks">'+SHOPS.map(function(s,i){return'<a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,k)+'">'+s[0]+'</a>'}).join(" · ")+'</div>'}
-function pr(x){return"~€"+(Math.round(x.p/5)*5).toLocaleString("en")}
 function perf(g,c,w){return w[0]*g.s+w[1]*c.s}
 function fps(req,p){return Math.round(60*p/req)}
 function minBy(a,f){return a.filter(f).sort(function(x,y){return x.p-y.p})[0]}
@@ -42,7 +41,6 @@ function fullBuild(c,g,t){
     return{gpu:g,cpu:c,board:bd,ram:ram,ssd:gb>16?P.ssd[1]:P.ssd[0],psu:psu,cs:cs};
   }
 }
-function total(b){return CATS.reduce(function(a,c){return a+b[c[1]].p},0)}
 function games(){
   $("#chips").innerHTML=GAMES.map(function(g,i){return'<button class="alt chip" data-g="'+i+'" aria-pressed="'+(S.sel.indexOf(i)>-1)+'">'+g[0]+'</button>'}).join("");
   $("#tiers").innerHTML=TIERS.map(function(t,i){return'<button class="alt" data-t="'+i+'" aria-pressed="'+(S.tier===i)+'">'+t[0]+' · '+t[1]+'</button>'}).join("");
@@ -54,16 +52,16 @@ function games(){
     h+='<p style="color:var(--mute);margin:10px 0">'+g[0]+' leans on the '+FOCUS[g[2]]+', so those parts get priority. '+(a.ok?'':'The target is out of reach for the parts we list, so the left column already shows the best we can do. ')+(same&&a.ok?'The smallest parts that reach your target are also the strongest, so both columns match.':'')+'</p>';
     h+='<div class="scroll"><table class="gt"><thead><tr><th>Part</th><th>To reach the target<br><span class="'+(fa>=t?'fps-ok':'fps-max')+'">about '+fa+' fps</span></th><th>For the most fps<br><span class="fps-ok">about '+fm+' fps</span></th></tr></thead><tbody>';
     CATS.forEach(function(c){var x=ba[c[1]],y=bm[c[1]];
-      h+='<tr><th>'+c[0]+'</th><td>'+x.n+' <span style="color:var(--mute)">'+pr(x)+'</span>'+shopLinks(x,c[1])+'</td><td>'+y.n+' <span style="color:var(--mute)">'+pr(y)+'</span></td></tr>'});
-    h+='<tr><th>Total</th><td><b>~€'+(Math.round(total(ba)/10)*10).toLocaleString("en")+'</b></td><td><b>~€'+(Math.round(total(bm)/10)*10).toLocaleString("en")+'</b></td></tr></tbody></table></div></details>';
+      h+='<tr><th>'+c[0]+'</th><td>'+x.n+shopLinks(x,c[1])+'</td><td>'+y.n+'</td></tr>'});
+    h+='</tbody></table></div></details>';
   });
   $("#g-out").innerHTML=h;
 }
 function shops(){
   $("#pt-cats").innerHTML=CATS.map(function(c){return'<button class="alt" data-k="'+c[1]+'" aria-pressed="'+(S.pk===c[1])+'">'+c[0]+'</button>'}).join("");
-  var h='<table><thead><tr><th>Part</th><th>Price</th>'+SHOPS.map(function(s){return'<th>'+s[0]+'</th>'}).join("")+'</tr></thead><tbody>';
+  var h='<table><thead><tr><th>Part</th>'+SHOPS.map(function(s){return'<th>'+s[0]+'</th>'}).join("")+'</tr></thead><tbody>';
   P[S.pk].forEach(function(x){
-    h+='<tr><th style="color:var(--ink)">'+x.n+'</th><td>'+pr(x)+'</td>'+SHOPS.map(function(s,i){return'<td><a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,S.pk)+'">Open</a></td>'}).join("")+'</tr>'});
+    h+='<tr><th style="color:var(--ink)">'+x.n+'</th>'+SHOPS.map(function(s,i){return'<td><a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,S.pk)+'">Open</a></td>'}).join("")+'</tr>'});
   $("#pt-out").innerHTML=h+'</tbody></table>';
 }
 function route(){
