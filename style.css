@@ -80,3 +80,4 @@ h1{text-shadow:0 0 42px #e5262e55}
 .shoplinks{font-size:14px;color:var(--mute);margin-top:4px}.shoplinks a{margin-right:2px}
 .fps-ok{color:var(--ok);font-weight:600}.fps-max{color:var(--warn);font-weight:600}
 .gt td:first-child{font-weight:600}
+.gm{margin-bottom:14px}.gm summary{cursor:pointer;font-weight:800;font-size:20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}.gm table{min-width:560px}.gt td{vertical-align:top}
