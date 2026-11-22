@@ -64,8 +64,8 @@ var SUF={board:" motherboard",ram:" RAM",ssd:" SSD",psu:" power supply",cs:" PC 
 /* [name, fps on the strongest parts at 1080p high (esports games on low), type, optional fps cap] */
 var GAMES=[["League of Legends",700,"e"],["Dota 2",450,"e"],["Valorant",800,"e"],["Minecraft",600,"m"],["Rocket League",800,"e"],["Rainbow Six Siege",600,"e"],["Grand Theft Auto V",230,"m"],["Overwatch 2",500,"e"],["Counter-Strike 2",450,"e"],["The Witcher 3",190,"a"],["Elden Ring",150,"m",60],["Apex Legends",320,"e"],["Fortnite",300,"m"],["Marvel Rivals",220,"m"],["Baldur’s Gate 3",170,"m"],["Helldivers 2",150,"m"],["Call of Duty: Warzone",230,"m"],["Forza Horizon 5",230,"a"],["Red Dead Redemption 2",160,"a"],["Hogwarts Legacy",140,"a"],["Starfield",140,"m"],["Cyberpunk 2077",180,"a"],["Alan Wake 2",120,"a"],["Black Myth: Wukong",110,"a"]];
 var WT={e:[.35,.65],m:[.6,.4],a:[.8,.2]},FOCUS={e:"processor",m:"processor and graphics card about equally",a:"graphics card"};
-var TIERS=[["Low","70–80 fps",75],["Medium","100–160 fps",130],["High","400+ fps",400]];
-var S={sel:[2,8,21],tier:0,pk:"gpu"};
+var LEVELS=[["Medium",400],["Good",800],["Expensive",1e9]];
+var S={sel:[2,8,21],tier:1,pk:"gpu"};
 var $=function(s){return document.querySelector(s)};
 function lk(x,i,k){return"https://www.google.com/search?q="+encodeURIComponent("site:"+SHOPS[i][1]+" "+x.n+(SUF[k]||""))}
 function shopLinks(x,k){return'<div class="shoplinks">'+SHOPS.map(function(s,i){return'<a class="lnk" target="_blank" rel="noopener" href="'+lk(x,i,k)+'">'+s[0]+'</a>'}).join(" · ")+'</div>'}
@@ -92,18 +92,32 @@ function fullBuild(c,g,t){
     return{gpu:g,cpu:c,board:bd,ram:ram,ssd:gb>16?P.ssd[1]:P.ssd[0],psu:psu,cs:cs};
   }
 }
+/* Best processor + graphics card for this game within a cost level (the cost cap is internal and never shown) */
+function bestUnder(cap,w,need){
+  var best=null;
+  P.cpu.forEach(function(c){P.gpu.forEach(function(g){
+    var cost=c.p+g.p;if(cost>cap)return;
+    var p=perf(g,c,w),ok=need&&p>=need;
+    if(!best||(ok&&!best.ok)||(ok===best.ok&&(ok?cost<best.w:(p>best.p||(p===best.p&&cost<best.w)))))best={c:c,g:g,p:p,w:cost,ok:ok};
+  })});
+  return best;
+}
 function games(){
   $("#chips").innerHTML=GAMES.map(function(g,i){return'<button class="alt chip" data-g="'+i+'" aria-pressed="'+(S.sel.indexOf(i)>-1)+'">'+g[0]+'</button>'}).join("");
-  $("#tiers").innerHTML=TIERS.map(function(t,i){return'<button class="alt" data-t="'+i+'" aria-pressed="'+(S.tier===i)+'">'+t[0]+' · '+t[1]+'</button>'}).join("");
+  $("#tiers").innerHTML=LEVELS.map(function(l,i){return'<button class="alt" data-t="'+i+'" aria-pressed="'+(S.tier===i)+'">'+l[0]+' parts</button>'}).join("");
   if(!S.sel.length){$("#g-out").innerHTML='<div class="panel">Pick at least one game above.</div>';return}
-  var t=TIERS[S.tier][2],h="";
+  var h="";
   S.sel.slice().sort(function(x,y){return x-y}).forEach(function(gi,k){
-    var g=GAMES[gi],w=WT[g[2]],eff=Math.min(t,g[3]||1e9),a=pick(eff*100/g[1],w),m=pick(1e9,w),ba=fullBuild(a.c,a.g,t),bm=fullBuild(m.c,m.g,Math.max(t,130)),fa=fps(g,a.p),fm=fps(g,m.p),same=a.g===m.g&&a.c===m.c;
-    h+='<details class="panel gm"'+(k===0?' open':'')+'><summary>'+g[0]+' <span class="tag">target '+TIERS[S.tier][1]+'</span> <span class="tag">max about '+fm+' fps</span></summary>';
-    h+='<p style="color:var(--mute);margin:10px 0">'+g[0]+' leans on the '+FOCUS[g[2]]+', so those parts get priority. '+(g[3]?g[0]+' is locked to '+g[3]+' fps, so extra power won’t add more. ':'')+(a.ok?'':'The target is out of reach for the parts we list, so the left column already shows the best we can do. ')+(same&&a.ok?'The smallest parts that reach your target are also the strongest, so both columns match.':'')+'</p>';
-    h+='<div class="scroll"><table class="gt"><thead><tr><th>Part</th><th>To reach the target<br><span class="'+(fa>=eff?'fps-ok':'fps-max')+'">about '+fa+' fps</span></th><th>For the most fps<br><span class="fps-ok">about '+fm+' fps</span></th></tr></thead><tbody>';
-    CATS.forEach(function(c){var x=ba[c[1]],y=bm[c[1]];
-      h+='<tr><th>'+c[0]+'</th><td>'+item(x,c[1],1)+'</td><td>'+item(y,c[1],0)+'</td></tr>'});
+    var g=GAMES[gi],w=WT[g[2]],R=LEVELS.map(function(l){var r=bestUnder(l[1],w,g[3]?g[3]*100/g[1]:0);return{n:l[0],r:r,f:fps(g,r.p)}});
+    var cur=R[S.tier],b=fullBuild(cur.r.c,cur.r.g,S.tier?130:75);
+    h+='<details class="panel gm"'+(k===0?' open':'')+'><summary>'+g[0]+R.map(function(x){return' <span class="tag">'+x.n+': about '+x.f+' fps</span>'}).join("")+'</summary>';
+    h+='<p style="color:var(--mute);margin:10px 0">'+g[0]+' leans on the '+FOCUS[g[2]]+', so those parts get priority. '+(g[3]?g[0]+' is locked to '+g[3]+' fps, so extra power won’t add more.':'')+'</p>';
+    h+='<div class="scroll"><table class="gt"><thead><tr><th>Level</th><th>Graphics card</th><th>Processor</th><th>Expected speed</th></tr></thead><tbody>';
+    R.forEach(function(x,i){
+      var same=i>0&&x.r.g===R[i-1].r.g&&x.r.c===R[i-1].r.c;
+      h+='<tr'+(i===S.tier?' class="cur"':'')+'><td>'+x.n+'</td><td>'+x.r.g.n+'</td><td>'+x.r.c.n+'</td><td><span class="fps-ok">about '+x.f+' fps</span>'+(same?'<br><span style="color:var(--mute)">Same parts as '+R[i-1].n+': this game gains nothing from more</span>':'')+'</td></tr>'});
+    h+='</tbody></table></div><h3 style="margin:20px 0 6px">All parts for the '+cur.n+' level</h3><div class="scroll"><table class="gt"><tbody>';
+    CATS.forEach(function(c){h+='<tr><th>'+c[0]+'</th><td>'+item(b[c[1]],c[1],1)+'</td></tr>'});
     h+='</tbody></table></div></details>';
   });
   $("#g-out").innerHTML=h;
